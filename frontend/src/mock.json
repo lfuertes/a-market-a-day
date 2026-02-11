@@ -1,0 +1,24 @@
+{
+  "location": "Marrakech, Marruecos",
+  "date": "12 Feb",
+  "heroImage": "https://www.caminosdepasion.com/wp-content/uploads/Mercado-2Bde-2BAbastos-2B02A.jpeg",
+  "ingredients": [
+    {
+      "title": "Especias",
+      "imageSrc": "https://cdn.nutritionstudies.org/wp-content/uploads/2018/01/top-15-spices-plant-based-cooking.jpg",
+      "description": "Mezcla de Ras el Hanout: perfecta para dar el sabor auténtico al Tajín."
+    },
+    {
+      "title": "Menta",
+      "imageSrc": "https://www.infocampo.com.ar/wp-content/uploads/2018/07/menta.jpeg",
+      "description": "Menta fresca recogida esta mañana para el té tradicional."
+    },
+    {
+      "title": "Dátiles",
+      "imageSrc": "https://hips.hearstapps.com/hmg-prod/images/datiles-elle-gourmet-6576c1f6d0cc1.jpg",
+      "description": "Dátiles Medjool dulces y carnosos del valle del Draa."
+    }
+  ],
+  "funFact": "¿Sabías qué? Los zocos de Marrakech se organizan por gremios desde el siglo XI. Originalmente, los productos más valiosos se vendían en el centro y los más económicos en la periferia, una estructura que aún perdura en muchas zonas."
+}
+

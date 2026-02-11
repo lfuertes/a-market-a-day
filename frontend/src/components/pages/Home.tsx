@@ -4,6 +4,7 @@ import { Hero } from "../organisms/Hero";
 import { IngredientsGrid } from "../organisms/IngredientsGrid";
 import { RecipeModal } from "../organisms/RecipeModal";
 import { FunFact } from "../organisms/FunFact";
+import mockData from "../../mock.json";
 
 export const Home = () => {
   const [selectedRecipe, setSelectedRecipe] = useState<{
@@ -21,10 +22,13 @@ export const Home = () => {
 
   return (
     <>
-      <Header />
-      <Hero />
-      <IngredientsGrid onIngredientClick={handleOpenRecipe} />
-      <FunFact />
+      <Header location={mockData.location} date={mockData.date} />
+      <Hero imageSrc={mockData.heroImage} />
+      <IngredientsGrid
+        ingredients={mockData.ingredients}
+        onIngredientClick={handleOpenRecipe}
+      />
+      <FunFact text={mockData.funFact} />
       <RecipeModal
         isOpen={!!selectedRecipe}
         title={selectedRecipe?.title || ""}

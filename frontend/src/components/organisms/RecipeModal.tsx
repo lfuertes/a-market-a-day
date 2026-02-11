@@ -22,8 +22,8 @@ export const RecipeModal = ({
         onClick={onClose}
       />
       <div
-        className="recipe-card fixed bottom-0 w-full max-w-[500px] bg-white p-[30px] rounded-t-[25px] z-[101] shadow-[0_-10px_30px_rgba(0,0,0,0.2)] animate-[slideUp_0.3s_ease-out]"
-        style={{ left: "50%", transform: "translateX(-50%)" }}
+        className="recipe-card fixed bottom-0 left-1/2 w-full max-w-[500px] bg-white p-[30px] rounded-t-[25px] z-[101] shadow-[0_-10px_30px_rgba(0,0,0,0.2)] animate-[slideUp_0.3s_ease-out]"
+        style={{ transform: "translateX(-50%)" }}
       >
         <h2 className="text-[1.5rem] mt-0 font-playfair">{title}</h2>
         <p className="text-[#444] leading-[1.6]">{description}</p>
