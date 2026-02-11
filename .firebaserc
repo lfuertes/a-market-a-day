@@ -1,5 +1,15 @@
 {
   "projects": {
     "default": "market-a-day"
-  }
+  },
+  "targets": {
+    "market-a-day": {
+      "storage": {
+        "rules": [
+          "market-a-day.firebasestorage.app"
+        ]
+      }
+    }
+  },
+  "etags": {}
 }

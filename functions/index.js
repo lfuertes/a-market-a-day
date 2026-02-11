@@ -82,7 +82,7 @@ exports.helloWorld = onRequest((request, response) => {
 
 exports.generateDailyMarket = onSchedule({
   schedule: "0 5 * * *",
-  timeoutSeconds: 360,
+  timeoutSeconds: 540,
   memory: "512MiB",
 }, async (event) => {
   logger.info("Starting refined daily generation...");
@@ -142,17 +142,28 @@ exports.generateDailyMarket = onSchedule({
     text = text.replace(/```json/g, "").replace(/```/g, "").trim();
 
     const market = JSON.parse(text);
-    logger.info(`Selected: ${market.location} in ${market.continent}`);
+    logger.info(`Selected: ${market.location} in ${market.continent}. ` +
+                "Starting image generation...");
 
     const hDest = `markets/${dateStr}/hero.jpg`;
     market.heroImage = await generateHighQualityImage(
         market.heroImageDescription, hDest);
 
+    if (!market.heroImage) {
+      logger.warn(`Hero image generation returned empty for ${dateStr}`);
+    }
+
     for (let i = 0; i < market.ingredients.length; i++) {
       const ing = market.ingredients[i];
+      logger.info(`Generating image for ingredient ` +
+                  `${i + 1}/${market.ingredients.length}: ${ing.title}`);
       const iDest = `markets/${dateStr}/ing_${i}.jpg`;
       ing.imageSrc = await generateHighQualityImage(
           ing.imageDescription, iDest);
+
+      if (!ing.imageSrc) {
+        logger.error(`Failed to generate image for ingredient: ${ing.title}`);
+      }
       delete ing.imageDescription;
     }
 
@@ -165,7 +176,8 @@ exports.generateDailyMarket = onSchedule({
       lastGenerated: admin.firestore.FieldValue.serverTimestamp(),
     });
 
-    logger.info(`Market for ${dateStr} successfully saved.`);
+    logger.info(`Market for ${dateStr} successfully saved with ` +
+                `${market.ingredients.length} ingredients.`);
   } catch (error) {
     logger.error("Daily generation error:", error);
   }

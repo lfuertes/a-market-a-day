@@ -1,0 +1,11 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Permitir lectura de archivos a usuarios autenticados
+    match /{allPaths=**} {
+      allow read: if request.auth != null;
+      allow write: if false; // Solo las functions pueden escribir (vía Admin SDK)
+    }
+  }
+}

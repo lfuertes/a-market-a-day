@@ -5,9 +5,10 @@ import { IngredientsGrid } from "../organisms/IngredientsGrid";
 import { RecipeModal } from "../organisms/RecipeModal";
 import { FunFact } from "../organisms/FunFact";
 import { Footer } from "../organisms/Footer";
-import mockData from "../../mock.json";
+import { useMarketData } from "../../hooks/useMarketData";
 
 export const Home = () => {
+  const { marketData, loading, error } = useMarketData();
   const [selectedRecipe, setSelectedRecipe] = useState<{
     title: string;
     description: string;
@@ -21,15 +22,37 @@ export const Home = () => {
     setSelectedRecipe(null);
   };
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen font-playfair animate-pulse text-[#aaa]">
+        Cargando mercado...
+      </div>
+    );
+  }
+
+  if (error || !marketData) {
+    return (
+      <div className="flex items-center justify-center h-screen font-playfair text-[#aaa] text-center px-10">
+        Lo sentimos, no hemos podido encontrar <br /> el mercado de hoy.
+      </div>
+    );
+  }
+
+  const todayStr = new Date().toLocaleDateString("es-ES", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+
   return (
     <>
-      <Header location={mockData.location} date={mockData.date} />
-      <Hero imageSrc={mockData.heroImage} />
+      <Header location={marketData.location} date={todayStr} />
+      <Hero imageSrc={marketData.heroImage} />
       <IngredientsGrid
-        ingredients={mockData.ingredients}
+        ingredients={marketData.ingredients}
         onIngredientClick={handleOpenRecipe}
       />
-      <FunFact text={mockData.funFact} />
+      <FunFact text={marketData.funFact} />
       <Footer />
       <RecipeModal
         isOpen={!!selectedRecipe}
