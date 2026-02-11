@@ -4,6 +4,7 @@ import { Hero } from "../organisms/Hero";
 import { IngredientsGrid } from "../organisms/IngredientsGrid";
 import { RecipeModal } from "../organisms/RecipeModal";
 import { FunFact } from "../organisms/FunFact";
+import { Footer } from "../organisms/Footer";
 import mockData from "../../mock.json";
 
 export const Home = () => {
@@ -29,6 +30,7 @@ export const Home = () => {
         onIngredientClick={handleOpenRecipe}
       />
       <FunFact text={mockData.funFact} />
+      <Footer />
       <RecipeModal
         isOpen={!!selectedRecipe}
         title={selectedRecipe?.title || ""}

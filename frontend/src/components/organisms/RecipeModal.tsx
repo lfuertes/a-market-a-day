@@ -22,12 +22,16 @@ export const RecipeModal = ({
         onClick={onClose}
       />
       <div
-        className="recipe-card fixed bottom-0 left-1/2 w-full max-w-[500px] bg-white p-[30px] rounded-t-[25px] z-[101] shadow-[0_-10px_30px_rgba(0,0,0,0.2)] animate-[slideUp_0.3s_ease-out]"
+        className="recipe-card fixed bottom-0 left-1/2 w-full max-w-[500px] bg-white p-[30px] pb-[calc(30px+env(safe-area-inset-bottom))] rounded-t-[25px] z-[101] shadow-[0_-10px_30px_rgba(0,0,0,0.2)] animate-[slideUp_0.3s_ease-out] max-h-[90dvh] overflow-y-auto flex flex-col"
         style={{ transform: "translateX(-50%)" }}
       >
         <h2 className="text-[1.5rem] mt-0 font-playfair">{title}</h2>
-        <p className="text-[#444] leading-[1.6]">{description}</p>
-        <Button onClick={onClose}>CERRAR</Button>
+        <div className="flex-1 overflow-y-auto mb-5">
+          <p className="text-[#444] leading-[1.6] m-0">{description}</p>
+        </div>
+        <Button onClick={onClose} className="w-full">
+          CERRAR
+        </Button>
       </div>
       <style>{`
         @keyframes slideUp {
