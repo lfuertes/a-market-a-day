@@ -203,11 +203,10 @@ exports.generateDailyMarket = onSchedule({
 });
 
 // Astro SSR handler
-const {handler: astroHandler} = require("./ssr-dist/entry.mjs");
-
 exports.ssr = onRequest({
   memory: "512MiB",
 }, (request, response) => {
+  const {handler: astroHandler} = require("./server/entry.mjs");
   astroHandler(request, response);
 });
 
