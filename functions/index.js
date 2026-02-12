@@ -29,9 +29,10 @@ const predictionServiceClient = new PredictionServiceClient({
  * Generates an image using Google Imagen 3
  * @param {string} prompt Visual description in English.
  * @param {string} destPath Firebase Storage path.
+ * @param {number} [retryCount=0] Current retry attempt.
  * @return {Promise<string>} Public URL.
  */
-async function generateHighQualityImage(prompt, destPath) {
+async function generateHighQualityImage(prompt, destPath, retryCount = 0) {
   try {
     logger.info(`Generating Imagen 3 image for: ${destPath}`);
 
@@ -71,12 +72,21 @@ async function generateHighQualityImage(prompt, destPath) {
     await file.makePublic();
     return `https://storage.googleapis.com/${bucket.name}/${destPath}`;
   } catch (error) {
+    // Retry on Quota Exceeded (Resource Exhausted - code 8)
+    if (error.code === 8 && retryCount < 2) {
+      const delay = (retryCount + 1) * 10000; // 10s, 20s
+      logger.warn(`Quota exceeded for ${destPath}. Retrying in ${delay}ms...`);
+      await new Promise((resolve) => setTimeout(resolve, delay));
+      return generateHighQualityImage(prompt, destPath, retryCount + 1);
+    }
     logger.error(`Failed to generate Imagen 3 image for ${destPath}`, error);
     return "";
   }
 }
 
-exports.helloWorld = onRequest((request, response) => {
+exports.helloWorld = onRequest({
+  memory: "512MiB",
+}, (request, response) => {
   response.send("Service active.");
 });
 
@@ -91,8 +101,8 @@ exports.generateDailyMarket = onSchedule({
     let lastContinent = "None";
 
     try {
+      // Simplificamos la consulta para evitar necesidad de índice compuesto
       const lastMarketSnap = await db.collection("dailyMarkets")
-          .orderBy(admin.firestore.FieldPath.documentId(), "desc")
           .limit(1)
           .get();
 
@@ -111,7 +121,7 @@ exports.generateDailyMarket = onSchedule({
     const dateStr = tomorrow.toISOString().split("T")[0];
 
     const prompt = `
-      Generate a gastronomic market entry for date ${dateStr}.
+      Generate a panoramic market entry for date ${dateStr}.
       LOGIC REQUIREMENTS:
       - Country MUST NOT be in this list: ${pastCountries}.
       - Continent MUST BE DIFFERENT from: ${lastContinent}.
@@ -119,22 +129,25 @@ exports.generateDailyMarket = onSchedule({
       Describe a stunning wide shot of a traditional market in {City, Country}.
       Capture city's soul (e.g., Amsterdam canals, Marrakech souks).
       National Geographic style, cinematic lighting, 8k, detailed.
-      INGREDIENT ART DIRECTION (imageDescription):
-      Professional macro food photography of {ingredient}, soft bokeh, 8k.
+      PRODUCT ART DIRECTION (imageDescription):
+      Professional macro photography of a {product} found in this market,
+      soft bokeh, 8k.
       RETURN ONLY JSON:
       {
         "location": "City, Country",
         "continent": "Continent Name",
         "heroImageDescription": "English prompt for hero image",
-        "ingredients": [
+        "products": [
           {
             "title": "Name",
-            "imageDescription": "English prompt for ingredient",
+            "imageDescription": "English prompt for product",
             "description": "Spanish description"
           }
         ],
         "funFact": "Spanish fun fact"
-      }`;
+      }
+      IMPORTANT: Generate exactly 3 products. They can be food, crafts, seeds,
+      or anything typical of that market.`;
 
     const result = await generativeModel.generateContent(prompt);
     const res = await result.response;
@@ -150,24 +163,30 @@ exports.generateDailyMarket = onSchedule({
         market.heroImageDescription, hDest);
 
     if (!market.heroImage) {
-      logger.warn(`Hero image generation returned empty for ${dateStr}`);
+      throw new Error(`Hero image generation failed for ${dateStr}`);
     }
 
-    for (let i = 0; i < market.ingredients.length; i++) {
-      const ing = market.ingredients[i];
-      logger.info(`Generating image for ingredient ` +
-                  `${i + 1}/${market.ingredients.length}: ${ing.title}`);
-      const iDest = `markets/${dateStr}/ing_${i}.jpg`;
-      ing.imageSrc = await generateHighQualityImage(
-          ing.imageDescription, iDest);
+    // Procesamos productos con un pequeño retraso para evitar Quota Exceeded
+    for (let i = 0; i < (market.products || []).length; i++) {
+      const prod = market.products[i];
+      const iDest = `markets/${dateStr}/prod_${i}.jpg`;
 
-      if (!ing.imageSrc) {
-        logger.error(`Failed to generate image for ingredient: ${ing.title}`);
+      // Esperar 5 segundos entre peticiones de imagen para mayor seguridad
+      await new Promise((resolve) => setTimeout(resolve, 5000));
+
+      const url = await generateHighQualityImage(prod.imageDescription, iDest);
+      if (!url) {
+        throw new Error(`Failed to generate image for product: ${prod.title}`);
       }
-      delete ing.imageDescription;
+      prod.imageSrc = url;
+      delete prod.imageDescription;
     }
 
     delete market.heroImageDescription;
+    // Map products back to ingredients for frontend compatibility if needed,
+    // but better to update the frontend. For now, let's keep both or rename.
+    market.ingredients = market.products;
+
     await db.collection("dailyMarkets").doc(dateStr).set(market);
 
     const cParts = market.location.split(",");
