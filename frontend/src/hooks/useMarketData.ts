@@ -1,6 +1,6 @@
 import dayjs from "dayjs";
 import { useState, useEffect } from "react";
-import { db, auth } from "../firebase";
+import { db, auth } from "../lib/firebase";
 import { doc, getDoc } from "firebase/firestore";
 import { signInAnonymously } from "firebase/auth";
 
@@ -16,12 +16,14 @@ export interface MarketData {
   funFact: string;
 }
 
-export const useMarketData = () => {
-  const [marketData, setMarketData] = useState<MarketData | null>(null);
-  const [loading, setLoading] = useState(true);
+export const useMarketData = (initialData?: MarketData | null) => {
+  const [marketData, setMarketData] = useState<MarketData | null>(initialData || null);
+  const [loading, setLoading] = useState(!initialData);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (initialData) return;
+    
     const fetchMarket = async () => {
       try {
         setLoading(true);

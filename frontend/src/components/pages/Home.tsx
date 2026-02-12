@@ -7,17 +7,19 @@ import { FunFact } from "../organisms/FunFact";
 import { Footer } from "../organisms/Footer";
 import { useMarketData } from "../../hooks/useMarketData";
 import { logEvent } from "firebase/analytics";
-import { analytics } from "../../firebase";
+import { analytics } from "../../lib/firebase";
 
-export const Home = () => {
-  const { marketData, loading, error } = useMarketData();
+export const Home = ({ initialData }: { initialData?: any }) => {
+  const { marketData, loading, error } = useMarketData(initialData);
   const [selectedRecipe, setSelectedRecipe] = useState<{
     title: string;
     description: string;
   } | null>(null);
 
   useEffect(() => {
-    logEvent(analytics, "page_view");
+    if (analytics) {
+      logEvent(analytics, "page_view");
+    }
   }, []);
 
   const handleOpenRecipe = (title: string, description: string) => {

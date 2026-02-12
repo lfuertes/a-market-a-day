@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build:frontend": "cd frontend && npm run build && cd .. && mkdir -p functions/ssr-dist && cp -R frontend/dist/server/. functions/ssr-dist/",
+    "deploy": "npm run build:frontend && firebase deploy"
   },
   "author": "Luis Fuertes",
   "license": "ISC",

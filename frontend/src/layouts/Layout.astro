@@ -1,0 +1,39 @@
+---
+interface Props {
+	title: string;
+	description?: string;
+	image?: string;
+}
+
+const { title, description = "Discover the unique ingredients and stories of markets around the world, every single day.", image } = Astro.props;
+import "../styles/global.css";
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<meta name="generator" content={Astro.generator} />
+		<title>{title}</title>
+
+		<!-- SEO -->
+		<meta name="description" content={description} />
+
+		<!-- Open Graph -->
+		<meta property="og:title" content={title} />
+		<meta property="og:description" content={description} />
+		{image && <meta property="og:image" content={image} />}
+		<meta property="og:type" content="website" />
+
+		<!-- Twitter Card -->
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:title" content={title} />
+		<meta name="twitter:description" content={description} />
+		{image && <meta name="twitter:image" content={image} />}
+	</head>
+	<body>
+		<slot />
+	</body>
+</html>

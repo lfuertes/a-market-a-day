@@ -201,3 +201,13 @@ exports.generateDailyMarket = onSchedule({
     logger.error("Daily generation error:", error);
   }
 });
+
+// Astro SSR handler
+const {handler: astroHandler} = require("./ssr-dist/entry.mjs");
+
+exports.ssr = onRequest({
+  memory: "512MiB",
+}, (request, response) => {
+  astroHandler(request, response);
+});
+

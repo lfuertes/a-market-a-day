@@ -1,0 +1,25 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { Home } from '../components/pages/Home';
+import { adminDb } from '../lib/firebase-admin';
+import dayjs from 'dayjs';
+
+const dateId = dayjs().format("YYYY-MM-DD");
+const docRef = adminDb.collection("dailyMarkets").doc(dateId);
+const docSnap = await docRef.get();
+const marketData = docSnap.exists ? docSnap.data() : null;
+
+const title = marketData 
+    ? `${marketData.location}, ${marketData.continent} | Market A Day`
+    : "Market A Day";
+
+const description = marketData
+    ? `Today's market at ${marketData.location}. Discover ${marketData.ingredients?.map((i: any) => i.title).join(', ') || 'fresh ingredients'}.`
+    : "Discover the unique ingredients and stories of markets around the world, every single day.";
+
+const image = marketData?.heroImage;
+---
+
+<Layout title={title} description={description} image={image}>
+	<Home client:load initialData={marketData} />
+</Layout>
