@@ -1,5 +1,6 @@
 ---
 import "../styles/global.css";
+import { CookieBanner } from "../components/organisms/CookieBanner";
 
 interface Props {
 	title: string;
@@ -61,5 +62,6 @@ const { title, description = "Discover the unique ingredients and stories of mar
 	</head>
 	<body>
 		<slot />
+		<CookieBanner client:load lang={lang} />
 	</body>
 </html>
