@@ -5,6 +5,7 @@ const {VertexAI} = require("@google-cloud/vertexai");
 const admin = require("firebase-admin");
 const {PredictionServiceClient} = require("@google-cloud/aiplatform");
 const {helpers} = require("@google-cloud/aiplatform");
+const sharp = require("sharp");
 
 admin.initializeApp();
 const db = admin.firestore();
@@ -30,9 +31,11 @@ const predictionServiceClient = new PredictionServiceClient({
  * @param {string} prompt Visual description in English.
  * @param {string} destPath Firebase Storage path.
  * @param {number} [retryCount=0] Current retry attempt.
+ * @param {boolean} [generateSocial=false] Whether to generate a thumbnail.
  * @return {Promise<string>} Public URL.
  */
-async function generateHighQualityImage(prompt, destPath, retryCount = 0) {
+async function generateHighQualityImage(prompt, destPath, retryCount = 0,
+    generateSocial = false) {
   try {
     logger.info(`Generating Imagen 3 image for: ${destPath}`);
 
@@ -70,6 +73,25 @@ async function generateHighQualityImage(prompt, destPath, retryCount = 0) {
     });
 
     await file.makePublic();
+
+    if (generateSocial) {
+      try {
+        const socialBuffer = await sharp(buffer)
+            .resize({width: 600})
+            .jpeg({quality: 80})
+            .toBuffer();
+        const socialDest = destPath.replace(".jpg", "_social.jpg");
+        const socialFile = bucket.file(socialDest);
+        await socialFile.save(socialBuffer, {
+          metadata: {contentType: "image/jpeg"},
+        });
+        await socialFile.makePublic();
+        logger.info(`Social thumbnail generated: ${socialDest}`);
+      } catch (err) {
+        logger.error("Failed to generate social thumbnail", err);
+      }
+    }
+
     return `https://storage.googleapis.com/${bucket.name}/${destPath}`;
   } catch (error) {
     // Retry on Quota Exceeded (Resource Exhausted - code 8)
@@ -77,7 +99,8 @@ async function generateHighQualityImage(prompt, destPath, retryCount = 0) {
       const delay = (retryCount + 1) * 10000; // 10s, 20s
       logger.warn(`Quota exceeded for ${destPath}. Retrying in ${delay}ms...`);
       await new Promise((resolve) => setTimeout(resolve, delay));
-      return generateHighQualityImage(prompt, destPath, retryCount + 1);
+      return generateHighQualityImage(prompt, destPath, retryCount + 1,
+          generateSocial);
     }
     logger.error(`Failed to generate Imagen 3 image for ${destPath}`, error);
     return "";
@@ -90,18 +113,25 @@ exports.helloWorld = onRequest({
   response.send("Service active.");
 });
 
-exports.generateDailyMarket = onSchedule({
-  schedule: "0 5 * * *",
-  timeoutSeconds: 540,
-  memory: "512MiB",
-}, async (event) => {
-  logger.info("Starting refined daily generation...");
+/**
+ * Core logic to generate market content for a specific date.
+ * If dateStr is not provided, defaults to tomorrow.
+ * @param {string} [dateOverride] Format YYYY-MM-DD
+ */
+async function generateMarketContent(dateOverride) {
+  let dateStr = dateOverride;
+  if (!dateStr) {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    dateStr = tomorrow.toISOString().split("T")[0];
+  }
+
+  logger.info(`Generating market content for date: ${dateStr}`);
 
   try {
     let lastContinent = "None";
 
     try {
-      // Simplificamos la consulta para evitar necesidad de índice compuesto
       const lastMarketSnap = await db.collection("dailyMarkets")
           .limit(1)
           .get();
@@ -116,10 +146,6 @@ exports.generateDailyMarket = onSchedule({
     const pastCountriesSnap = await db.collection("generatedCountries").get();
     const pastCountries = pastCountriesSnap.docs.map((d) => d.id).join(", ");
 
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const dateStr = tomorrow.toISOString().split("T")[0];
-
     const prompt = `
       Generate a panoramic market entry for date ${dateStr}.
       LOGIC REQUIREMENTS:
@@ -132,19 +158,22 @@ exports.generateDailyMarket = onSchedule({
       PRODUCT ART DIRECTION (imageDescription):
       Professional macro photography of a {product} found in this market,
       soft bokeh, 8k.
-      RETURN ONLY JSON:
+      RETURN ONLY JSON with this bilingual structure:
       {
-        "location": "City, Country",
-        "continent": "Continent Name",
+        "location": { "en": "City, Country", "es": "Ciudad, País" },
+        "continent": { "en": "Continent Name", "es": "Nombre Continente" },
         "heroImageDescription": "English prompt for hero image",
         "products": [
           {
-            "title": "Name",
+            "title": { "en": "Name", "es": "Nombre" },
             "imageDescription": "English prompt for product",
-            "description": "Spanish description"
+            "description": {
+              "en": "English description",
+              "es": "Descripción en español",
+            }
           }
         ],
-        "funFact": "Spanish fun fact"
+        "funFact": { "en": "English fun fact", "es": "Curiosidad en español" }
       }
       IMPORTANT: Generate exactly 3 products. They can be food, crafts, seeds,
       or anything typical of that market.`;
@@ -160,7 +189,7 @@ exports.generateDailyMarket = onSchedule({
 
     const hDest = `markets/${dateStr}/hero.jpg`;
     market.heroImage = await generateHighQualityImage(
-        market.heroImageDescription, hDest);
+        market.heroImageDescription, hDest, 0, true);
 
     if (!market.heroImage) {
       throw new Error(`Hero image generation failed for ${dateStr}`);
@@ -189,16 +218,54 @@ exports.generateDailyMarket = onSchedule({
 
     await db.collection("dailyMarkets").doc(dateStr).set(market);
 
-    const cParts = market.location.split(",");
-    const country = cParts.length > 1 ? cParts[1].trim() : market.location;
+    const cParts = market.location.en.split(",");
+    const country = cParts.length > 1 ? cParts[1].trim() : market.location.en;
     await db.collection("generatedCountries").doc(country).set({
       lastGenerated: admin.firestore.FieldValue.serverTimestamp(),
     });
 
     logger.info(`Market for ${dateStr} successfully saved with ` +
                 `${market.ingredients.length} ingredients.`);
+    return `Market generated for ${dateStr}`;
   } catch (error) {
     logger.error("Daily generation error:", error);
+    throw error;
+  }
+}
+
+exports.generateDailyMarket = onSchedule({
+  schedule: "0 5 * * *",
+  timeoutSeconds: 540,
+  memory: "512MiB",
+}, async (event) => {
+  logger.info("Starting scheduled daily generation...");
+  await generateMarketContent();
+});
+
+const {defineSecret} = require("firebase-functions/params");
+const apiKey = defineSecret("ADMIN_API_KEY");
+
+exports.manualGenerateDailyMarket = onRequest({
+  memory: "512MiB",
+  timeoutSeconds: 540,
+  secrets: [apiKey],
+}, async (req, res) => {
+  // Security check
+  const providedKey = req.query.key;
+
+  if (providedKey !== apiKey.value()) {
+    logger.warn("Unauthorized manual generation attempt.");
+    res.status(403).send({success: false, error: "Unauthorized: Invalid key"});
+    return;
+  }
+
+  const date = req.query.date; // Optional: ?date=YYYY-MM-DD
+  logger.info(`Manual generation triggered for date: ${date || "tomorrow"}`);
+  try {
+    const result = await generateMarketContent(date);
+    res.send({success: true, message: result});
+  } catch (error) {
+    res.status(500).send({success: false, error: error.message});
   }
 });
 

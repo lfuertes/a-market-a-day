@@ -1,4 +1,5 @@
 import { IngredientCard } from "../molecules/IngredientCard";
+import { translations } from "../../lib/translations";
 
 interface Ingredient {
   title: string;
@@ -9,16 +10,20 @@ interface Ingredient {
 interface IngredientsGridProps {
   ingredients: Ingredient[];
   onIngredientClick: (title: string, description: string) => void;
+  lang: "en" | "es";
 }
 
 export const IngredientsGrid = ({
   ingredients,
   onIngredientClick,
+  lang,
 }: IngredientsGridProps) => {
+  const t = translations[lang];
+
   return (
     <>
       <div className="section-label w-full max-w-[500px] px-5 text-[0.75rem] font-bold m-[20px_0_15px_0] text-[#999] tracking-[1px]">
-        PRODUCTOS DESTACADOS
+        {t.featuredProducts}
       </div>
       <div className="ingredients-grid grid grid-cols-3 gap-[15px] w-full max-w-[500px] px-5 mb-[40px]">
         {ingredients.map((ing) => (

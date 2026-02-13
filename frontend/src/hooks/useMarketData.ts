@@ -4,17 +4,25 @@ import { db, auth } from "../lib/firebase";
 import { doc, getDoc } from "firebase/firestore";
 import { signInAnonymously } from "firebase/auth";
 
+export type LocalizedString = string | { en: string; es: string };
+
 export interface MarketData {
-  location: string;
-  continent: string;
+  location: LocalizedString;
+  continent: LocalizedString;
   heroImage: string;
   ingredients: Array<{
-    title: string;
+    title: LocalizedString;
     imageSrc: string;
-    description: string;
+    description: LocalizedString;
   }>;
-  funFact: string;
+  funFact: LocalizedString;
 }
+
+export const getLocalizedText = (text: LocalizedString | undefined, lang: "en" | "es" = "en"): string => {
+  if (!text) return "";
+  if (typeof text === "string") return text;
+  return text[lang] || text["en"] || "";
+};
 
 export const useMarketData = (initialData?: MarketData | null) => {
   const [marketData, setMarketData] = useState<MarketData | null>(initialData || null);

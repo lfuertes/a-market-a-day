@@ -1,0 +1,52 @@
+---
+import "../../styles/global.css";
+import Layout from '../../layouts/Layout.astro';
+import { Home } from '../../components/pages/Home';
+import { adminDb } from '../../lib/firebase-admin';
+import { getLocalizedText } from '../../hooks/useMarketData';
+import dayjs from 'dayjs';
+
+export const prerender = false;
+
+const { lang } = Astro.params;
+
+if (lang !== 'en' && lang !== 'es') {
+  return Astro.redirect('/en');
+}
+
+const currentDate = dayjs().format("YYYY-MM-DD");
+const docRef = adminDb.collection("dailyMarkets").doc(currentDate);
+const docSnap = await docRef.get();
+const marketData = docSnap.exists ? docSnap.data() : null;
+
+// Helper to check if data is new format (bilingual)
+const isNewFormat = marketData && typeof marketData.location === 'object';
+
+// Resolve strings for Meta Tags
+const locText = getLocalizedText(marketData?.location, lang as "en" | "es");
+const continentText = getLocalizedText(marketData?.continent, lang as "en" | "es");
+const ingredientsText = marketData?.ingredients?.map((i: any) => getLocalizedText(i.title, lang as "en" | "es")).join(', ');
+
+const title = marketData 
+    ? `${locText}, ${continentText} | Market A Day`
+    : "Market A Day";
+
+const description = marketData
+    ? (lang === 'es' 
+        ? `Mercado de hoy en ${locText}. Descubre ${ingredientsText || 'ingredientes frescos'}.`
+        : `Today's market at ${locText}. Discover ${ingredientsText || 'fresh ingredients'}.`)
+    : (lang === 'es'
+        ? "Descubre los ingredientes únicos e historias de mercados alrededor del mundo, cada día."
+        : "Discover the unique ingredients and stories of markets around the world, every single day.");
+
+// Logic for Social Image
+const heroImage = marketData?.heroImage;
+const socialImage = (isNewFormat && heroImage) 
+    ? heroImage.replace(".jpg", "_social.jpg") 
+    : heroImage;
+
+---
+
+<Layout title={title} description={description} image={socialImage} lang={lang as "en" | "es"}>
+	<Home client:load initialData={marketData} lang={lang as "en" | "es"} />
+</Layout>

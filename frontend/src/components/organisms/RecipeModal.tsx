@@ -1,10 +1,12 @@
 import { Button } from "../atoms/Button";
+import { translations } from "../../lib/translations";
 
 interface RecipeModalProps {
   isOpen: boolean;
   title: string;
   description: string;
   onClose: () => void;
+  lang: "en" | "es";
 }
 
 export const RecipeModal = ({
@@ -12,7 +14,10 @@ export const RecipeModal = ({
   title,
   description,
   onClose,
+  lang,
 }: RecipeModalProps) => {
+  const t = translations[lang];
+
   if (!isOpen) return null;
 
   return (
@@ -30,7 +35,7 @@ export const RecipeModal = ({
           <p className="text-[#444] leading-[1.6] m-0">{description}</p>
         </div>
         <Button onClick={onClose} className="w-full">
-          CERRAR
+          {t.close}
         </Button>
       </div>
       <style>{`

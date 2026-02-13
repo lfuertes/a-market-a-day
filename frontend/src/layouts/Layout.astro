@@ -1,16 +1,18 @@
 ---
+import "../styles/global.css";
+
 interface Props {
 	title: string;
 	description?: string;
 	image?: string;
+	lang: "es" | "en";
 }
 
-const { title, description = "Discover the unique ingredients and stories of markets around the world, every single day.", image } = Astro.props;
-import "../styles/global.css";
+const { title, description = "Discover the unique ingredients and stories of markets around the world, every single day.", image, lang } = Astro.props;
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang={lang}>
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width" />
@@ -18,17 +20,34 @@ import "../styles/global.css";
 		<meta name="generator" content={Astro.generator} />
 		<title>{title}</title>
 
+		<link rel="canonical" href={new URL(Astro.url.pathname, Astro.site)} />
+		<script type="application/ld+json" set:html={JSON.stringify({
+			"@context": "https://schema.org",
+			"@type": "WebSite",
+			"name": "Market A Day",
+			"url": "https://amarketaday.com",
+			"potentialAction": {
+				"@type": "SearchAction",
+				"target": "https://amarketaday.com/search?q={search_term_string}",
+				"query-input": "required name=search_term_string"
+			}
+		})} />
+
 		<!-- SEO -->
 		<meta name="description" content={description} />
+		<link rel="sitemap" href="/sitemap-index.xml" />
 
 		<!-- Open Graph -->
 		<meta property="og:title" content={title} />
 		<meta property="og:description" content={description} />
+		<meta property="og:locale" content={lang === "es" ? "es_ES" : "en_US"} />
+		<meta property="og:site_name" content="Market A Day" />
 		{image && (
 			<>
 				<meta property="og:image" content={image} />
-				<meta property="og:image:width" content="1024" />
-				<meta property="og:image:height" content="1024" />
+				<meta property="og:image:secure_url" content={image} />
+				<meta name="image" property="og:image" content={image} />
+				<meta itemprop="image" content={image} />
 			</>
 		)}
 		<meta property="og:type" content="website" />
