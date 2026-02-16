@@ -251,9 +251,10 @@ exports.manualGenerateDailyMarket = onRequest({
   secrets: [apiKey],
 }, async (req, res) => {
   // Security check
-  const providedKey = req.query.key;
+  const providedKey = (req.query.key || "").trim();
+  const expectedKey = (apiKey.value() || "").trim();
 
-  if (providedKey !== apiKey.value()) {
+  if (providedKey !== expectedKey) {
     logger.warn("Unauthorized manual generation attempt.");
     res.status(403).send({success: false, error: "Unauthorized: Invalid key"});
     return;
