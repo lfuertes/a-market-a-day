@@ -28,8 +28,8 @@ const continentText = getLocalizedText(marketData?.continent, lang as "en" | "es
 const ingredientsText = marketData?.ingredients?.map((i: any) => getLocalizedText(i.title, lang as "en" | "es")).join(', ');
 
 const title = marketData 
-    ? `${locText}, ${continentText} | Market A Day`
-    : "Market A Day";
+    ? `${locText}, ${continentText} | A Market A Day`
+    : "A Market A Day";
 
 const description = marketData
     ? (lang === 'es' 
